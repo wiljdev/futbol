@@ -11,7 +11,8 @@
       "WebSearch",
       "Bash(rm:*)",
       "Bash(composer show:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(php -l:*)"
     ],
     "deny": [],
     "ask": []
