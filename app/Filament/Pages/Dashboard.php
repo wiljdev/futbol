@@ -26,4 +26,12 @@ class Dashboard extends BaseDashboard
     {
         return 2;
     }
+
+    public function getWidgets(): array
+    {
+        return [
+            \App\Filament\Widgets\StatsOverviewWidget::class,
+            \App\Filament\Widgets\UpcomingGamesWidget::class,
+        ];
+    }
 }
