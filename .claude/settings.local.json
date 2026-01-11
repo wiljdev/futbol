@@ -12,7 +12,9 @@
       "Bash(rm:*)",
       "Bash(composer show:*)",
       "Bash(cp:*)",
-      "Bash(php -l:*)"
+      "Bash(php -l:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []
