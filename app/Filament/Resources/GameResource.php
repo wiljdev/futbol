@@ -16,46 +16,85 @@ class GameResource extends Resource
 {
     protected static ?string $model = Game::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $modelLabel = 'Juego';
+
+    protected static ?string $pluralModelLabel = 'Juegos';
+
+    protected static ?string $navigationIcon = 'heroicon-o-trophy';
+
+    protected static ?string $navigationLabel = 'Juegos';
+
+    protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\DatePicker::make('date')
-                ->label('Fecha')
-                ->required()
-                ->default(now())
-                ->live()
-                ->afterStateUpdated(function ($state, callable $set) {
-                    if ($state) {
-                        $set('season_year', Carbon::parse($state)->year);
-                    }
-                }),
+            Forms\Components\Section::make('Información del Juego')
+                ->description('Configura la fecha, hora y ubicación del partido')
+                ->icon('heroicon-o-calendar')
+                ->schema([
+                    Forms\Components\Grid::make(2)
+                        ->schema([
+                            Forms\Components\DatePicker::make('date')
+                                ->label('Fecha del Partido')
+                                ->required()
+                                ->native(false)
+                                ->displayFormat('d/m/Y')
+                                ->default(now())
+                                ->live()
+                                ->afterStateUpdated(function ($state, callable $set) {
+                                    if ($state) {
+                                        $set('season_year', Carbon::parse($state)->year);
+                                    }
+                                }),
 
-            Forms\Components\TimePicker::make('time')
-                ->label('Hora')
-                ->default('19:00'),
+                            Forms\Components\TimePicker::make('time')
+                                ->label('Hora de Inicio')
+                                ->default('19:00')
+                                ->seconds(false)
+                                ->required(),
+                        ]),
 
-            Forms\Components\TextInput::make('location')
-                ->label('Lugar')
-                ->default('Cancha habitual'),
+                    Forms\Components\TextInput::make('location')
+                        ->label('Lugar del Partido')
+                        ->default('Cancha habitual')
+                        ->maxLength(255)
+                        ->placeholder('Ej: Cancha La Bombonera')
+                        ->columnSpanFull(),
+                ]),
 
-            Forms\Components\TextInput::make('season_year')
-                ->label('Temporada (Año)')
-                ->default(now()->year)
-                ->readOnly()
-                ->helperText('Se calcula automáticamente del año de la fecha'),
+            Forms\Components\Section::make('Numeración')
+                ->description('Información de temporada y número de partido')
+                ->icon('heroicon-o-hashtag')
+                ->collapsed()
+                ->schema([
+                    Forms\Components\Grid::make(2)
+                        ->schema([
+                            Forms\Components\TextInput::make('match_number')
+                                ->label('N° de Partido (1-13)')
+                                ->numeric()
+                                ->required()
+                                ->helperText('Se asigna automáticamente. Usa "Recalcular Números" si insertas partidos'),
 
-            Forms\Components\TextInput::make('match_number')
-                ->label('N° Partido (1-13)')
-                ->numeric()
-                ->required()
-                ->helperText('Se asigna automáticamente. Usa "Recalcular Números" si insertas partidos'),
+                            Forms\Components\TextInput::make('season_year')
+                                ->label('Temporada (Año)')
+                                ->default(now()->year)
+                                ->readOnly()
+                                ->helperText('Se calcula automáticamente del año de la fecha'),
+                        ]),
+                ]),
 
-            Forms\Components\Textarea::make('notes')
-                ->label('Notas')
-                ->rows(3)
-                ->columnSpanFull(),
+            Forms\Components\Section::make('Notas Adicionales')
+                ->description('Información extra sobre el partido (opcional)')
+                ->icon('heroicon-o-document-text')
+                ->collapsed()
+                ->schema([
+                    Forms\Components\Textarea::make('notes')
+                        ->label('Notas')
+                        ->rows(3)
+                        ->placeholder('Ej: Llevar balones extras, confirmar con el encargado...')
+                        ->columnSpanFull(),
+                ]),
         ]);
     }
 
@@ -135,12 +174,15 @@ class GameResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->label('Editar'),
+                Tables\Actions\DeleteAction::make()
+                    ->label('Eliminar'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->label('Eliminar seleccionados'),
                 ]),
             ]);
     }

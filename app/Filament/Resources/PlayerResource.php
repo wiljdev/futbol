@@ -17,15 +17,31 @@ class PlayerResource extends Resource
 {
     protected static ?string $model = Player::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $modelLabel = 'Jugador';
+
+    protected static ?string $pluralModelLabel = 'Jugadores';
+
+    protected static ?string $navigationIcon = 'heroicon-o-user-group';
+
+    protected static ?string $navigationLabel = 'Jugadores';
+
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
+                Forms\Components\Section::make('Información del Jugador')
+                    ->description('Datos básicos del jugador')
+                    ->icon('heroicon-o-user')
+                    ->schema([
+                        Forms\Components\TextInput::make('name')
+                            ->label('Nombre Completo')
+                            ->required()
+                            ->maxLength(255)
+                            ->placeholder('Ej: Juan Pérez')
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 
@@ -34,25 +50,45 @@ class PlayerResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->searchable(),
+                    ->label('Nombre')
+                    ->searchable()
+                    ->sortable()
+                    ->icon('heroicon-o-user')
+                    ->weight('medium'),
+
+                Tables\Columns\TextColumn::make('attendances_count')
+                    ->label('Partidos Jugados')
+                    ->counts('attendances')
+                    ->sortable()
+                    ->badge()
+                    ->color('success'),
+
                 Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
+                    ->label('Fecha de Registro')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
+                    ->label('Última Actualización')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('name', 'asc')
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->label('Editar'),
+                Tables\Actions\DeleteAction::make()
+                    ->label('Eliminar'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->label('Eliminar seleccionados'),
                 ]),
             ]);
     }
