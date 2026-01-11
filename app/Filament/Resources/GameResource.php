@@ -24,7 +24,13 @@ class GameResource extends Resource
             Forms\Components\DatePicker::make('date')
                 ->label('Fecha')
                 ->required()
-                ->default(now()),
+                ->default(now())
+                ->live()
+                ->afterStateUpdated(function ($state, callable $set) {
+                    if ($state) {
+                        $set('season_year', Carbon::parse($state)->year);
+                    }
+                }),
 
             Forms\Components\TimePicker::make('time')
                 ->label('Hora')
@@ -35,15 +41,16 @@ class GameResource extends Resource
                 ->default('Cancha habitual'),
 
             Forms\Components\TextInput::make('season_year')
-                ->label('Temporada')
+                ->label('Temporada (Año)')
                 ->default(now()->year)
-                ->readOnly(),
+                ->readOnly()
+                ->helperText('Se calcula automáticamente del año de la fecha'),
 
             Forms\Components\TextInput::make('match_number')
-                ->label('N° Partido')
+                ->label('N° Partido (1-13)')
                 ->numeric()
                 ->required()
-                ->helperText('Se calcula automáticamente al crear, pero puedes editarlo manualmente si es necesario'),
+                ->helperText('Se asigna automáticamente. Usa "Recalcular Números" si insertas partidos'),
 
             Forms\Components\Textarea::make('notes')
                 ->label('Notas')
@@ -55,6 +62,7 @@ class GameResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('date', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('match_number')
                     ->label('#')
@@ -100,25 +108,29 @@ class GameResource extends Resource
                     ->icon('heroicon-o-calculator')
                     ->color('warning')
                     ->requiresConfirmation()
-                    ->modalHeading('Recalcular números de partido')
-                    ->modalDescription('Esto recalculará los números de todos los partidos de la temporada actual ordenándolos por fecha. ¿Deseas continuar?')
+                    ->modalHeading('Recalcular números de partidos')
+                    ->modalDescription('Esto recalculará los números de TODOS los partidos ordenándolos por fecha. Los números irán del 1 al 13 y luego se reinician. ¿Deseas continuar?')
                     ->action(function () {
-                        $season = now()->year;
+                        // Obtener TODOS los juegos ordenados por fecha (ascendente)
+                        $games = Game::orderBy('date')->get();
 
-                        // Obtener todos los juegos de la temporada actual ordenados por fecha
-                        $games = Game::where('season_year', $season)
-                            ->orderBy('date')
-                            ->get();
-
-                        // Asignar números secuenciales
+                        // Recalcular números del 1 al 13
                         foreach ($games as $index => $game) {
-                            $game->update(['match_number' => $index + 1]);
+                            $matchNumber = ($index % 13) + 1;
+
+                            // El season_year es simplemente el año de la fecha del partido
+                            $seasonYear = Carbon::parse($game->date)->year;
+
+                            $game->update([
+                                'match_number' => $matchNumber,
+                                'season_year' => $seasonYear,
+                            ]);
                         }
 
                         Notification::make()
-                            ->title('Números recalculados')
+                            ->title('Números recalculados exitosamente')
                             ->success()
-                            ->body("Se recalcularon {$games->count()} partidos de la temporada {$season}.")
+                            ->body("Se recalcularon {$games->count()} partidos. Los números van del 1 al 13 y se reinician.")
                             ->send();
                     }),
             ])
@@ -141,9 +153,10 @@ class GameResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListGames::route('/'),
-            'create' => Pages\CreateGame::route('/create'),
-            'edit'   => Pages\EditGame::route('/{record}/edit'),
+            'index'       => Pages\ListGames::route('/'),
+            'create'      => Pages\CreateGame::route('/create'),
+            'bulk-create' => Pages\BulkCreateGames::route('/bulk-create'),
+            'edit'        => Pages\EditGame::route('/{record}/edit'),
         ];
     }
 }

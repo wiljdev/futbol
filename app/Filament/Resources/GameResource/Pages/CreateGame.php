@@ -12,14 +12,14 @@ class CreateGame extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        // Temporada actual
-        $data['season_year'] = now()->year;
+        // El season_year es el año de la fecha del partido
+        $data['season_year'] = \Carbon\Carbon::parse($data['date'])->year;
 
-        // Buscar último número de partido de la temporada
-        $lastMatchNumber = Game::where('season_year', $data['season_year'])
-            ->max('match_number');
+        // Buscar el último número de partido (del 1 al 13)
+        $lastMatchNumber = Game::max('match_number') ?? 0;
 
-        $data['match_number'] = $lastMatchNumber ? $lastMatchNumber + 1 : 1;
+        // Si es 13, volver a 1, si no, incrementar
+        $data['match_number'] = $lastMatchNumber >= 13 ? 1 : $lastMatchNumber + 1;
 
         // Valores por defecto si no se envían
         $data['time'] = $data['time'] ?? '19:00:00';
